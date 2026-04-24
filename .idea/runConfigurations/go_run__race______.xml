@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go run -race ./..." type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="go-learning-project-sensors" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-race" />
+    <envs>
+      <env name="CGO_ENABLED" value="1" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="github.com/BojkoJ/nano-sensor-simulator" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <method v="2" />
+  </configuration>
+</component>

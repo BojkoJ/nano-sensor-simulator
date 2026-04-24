@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="go test -v ./simulator/... " type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="go-learning-project-sensors" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-v" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/BojkoJ/nano-sensor-simulator" />
+    <directory value="$PROJECT_DIR$/simulator" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>

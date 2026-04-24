@@ -1,17 +1,20 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
+
+	"github.com/BojkoJ/nano-sensor-simulator/simulator"
 )
 
 // ---------------------------------------------------------------------------
-// Mini projekt. Část 1:
+// Mini projekt. Část 1a:
 // Napsat GO CLI aplikaci "nano-sensor-simulator", která:
 // 1. Inicializuje 3 "senzory" (ID: sensor-1, sensor-2, sensor-3)
 // 2. Každou sekundu vygeneruje pro každý senzor:
@@ -20,89 +23,130 @@ import (
 // 3. Vytiskne výstup do stdout jako JSON (encoding/json)
 // 4. Pokud teplota > 40°C, vytiskne WARNING na stderr
 // 5. Gracefully se ukončí při Ctrl+C (os.Signal)
-
+//
 // Struktura projektu:
-// mini-project/
+// go-learning-project-sensors/
 // ├── main.go    (vstupní bod, signal handling, ticker loop)
 // ├── sensor.go  (sensor logika, generování dat)
 // └── go.mod
 // ---------------------------------------------------------------------------
+// Mini projekt. Část 1b:
+// Rozšířit CLI simulátor ze sekce 1a.
+// Každý senzor poběží jako samostatná goroutina, výsledky se agregují přes channel,
+// Program správně reaguje na Ctrl+C a obsahuje unit testy (sensor_test.go).
+//
+// Nová struktura projektu:
+// go-learning-project-sensors/
+// ├── main.go
+// ├── simulator/
+// │   ├── sensor.go
+// │   └── sensor_test.go (unit testing)
+// └── go.mod
+// ---------------------------------------------------------------------------
 
 func main() {
-	// Inicializujeme 3 senzory
-	sensors := []*Sensor{
-		NewSensor("sensor-1"),
-		NewSensor("sensor-2"),
-		NewSensor("sensor-3"),
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	// Definice senzorů
+	sensors := []simulator.Config{
+		{
+			ID:       "TEMP-001",
+			MinTemp:  -10.0,
+			MaxTemp:  50.0,
+			Interval: time.Second,
+		},
+		{
+			ID:       "TEMP-002",
+			MinTemp:  15.0,
+			MaxTemp:  30.0,
+			Interval: time.Second,
+		},
+		{
+			ID:       "TEMP-003",
+			MinTemp:  -30.0,
+			MaxTemp:  -10.0,
+			Interval: time.Second,
+		},
 	}
 
-	_, err := fmt.Fprintln(os.Stderr, "Nano Sensor Simulator Starting...")
-	if err != nil {
-		log.Fatal(err)
-		return
+	// Buffered channel pro agregaci výsledků ze všech senzorů
+	// Kapacita = počet senzorů *10 pro absorpci krátkodobých špiček
+	readings := make(chan simulator.Reading, len(sensors)*10)
+
+	// Context pro graceful stutdown
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// WaitGroup pro čekání na dokončení goroutin
+	var wg sync.WaitGroup
+
+	// Spuštění goroutin pro každý senzor
+	for _, cfg := range sensors {
+		cfg := cfg // capture loop variable
+		wg.Add(1)
+
+		sensorLogger := logger.With("sensor_id", cfg.ID)
+
+		go func() {
+			defer wg.Done()
+			sensor := simulator.NewSensor(cfg, sensorLogger)
+			sensor.Run(ctx, readings) // Blokuje dokud ctx není zrušen (cancelled)
+		}()
 	}
-	_, err = fmt.Fprintf(os.Stderr, "Monitoring %d sensors. Press Ctrl+C to stop.\n", len(sensors))
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
 
-	// Ticker - "tiká" každou sekundu (analogie setInterval v JS)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+	// goroutina pro uzavření readings channelu po dokončení všech senzorů
+	go func() {
+		wg.Wait()
+		close(readings)
+		logger.Info("all sensors stopped, readings channel closed")
+	}()
 
-	// Channel pro OS signály (Ctrl+C = SIGINT, kill = SIGTERM)
-	// Vytvoříme kanál (channel) na signály - 1. parametr
-	// 2. parametr: 1 znamená, že kanál si může zapamatovat 1 signál,
-	// Protože chceme gracefully ukončit, což znamená:
-	// - zachytit signál SIGINT (zkratka pro "interrupt", což je signál, který se posílá při stisknutí Ctrl+C)
-	// - zachytit signál SIGTERM (zkratka pro "terminate", což je signál, který se posílá při ukončování procesu, například příkazem kill)
-	// Takže "graceful shutdown" znamená, že když uživatel stiskne Ctrl+C nebo když se proces ukončuje, naše aplikace zachytí tento signál
-	// a může provést nějaké úklidové operace (jako zavření souborů, uvolnění zdrojů, atd.) před tím, než se skutečně ukončí.
-	sigChan := make(chan os.Signal, 1)
+	// Naslouchání na OS signály (Ctrl+C nebo kill)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// signal.Notify říká, že chceme dostávat notifikace o signálech SIGINT a SIGTERM do kanálu sigChan a ostatní signály tento kanál ignoruje
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// Goroutina pro zpracování signálů
+	go func() {
+		sig := <-sigCh
+		logger.Info("shutdown signal received", "signal", sig.String())
+		cancel() // Zruší context -> ukončí všechny senzory
+	}()
 
-	// JSON encoder pro výstup do stdout
-	encoder := json.NewEncoder(os.Stdout)
-	// prefix: "" - nechceme žádný prefix před každým JSON objektem
-	// indent: " " - chceme, aby JSON byl hezky formátovaný s odsazením (pretty print)
-	encoder.SetIndent("", " ")
+	logger.Info("simulator started",
+		"sensors", len(sensors),
+		"press", "Ctrl+C to stop")
 
-	// Hlavní smyčka - select čeká na první připravený channel
-	for {
-		select { // Select je jako Switch
-		case <-ticker.C: // Pokud tiknul ticker (každou sekundu), tak se provede tento blok
-			// Ticker "tiknul" - zpracuj všechny seznory
-			for _, sensor := range sensors {
-				reading := sensor.GenerateReading()
+	// Agregace výsledků v main goroutině
+	var (
+		totalReadings int
+		anomalyCount  int
+	)
 
-				// Zapíšeme JSON na stdout
-				// funkce Encode zapíše JSON reprezentaci objektu reading do writeru (v našem případě os.Stdout)
-				// automaticky na stdout, protože json.NewEncoder(os.Stdout)
-				if err := encoder.Encode(reading); err != nil {
-					_, err := fmt.Fprintf(os.Stderr, "ERROR: encode reading: %v\n", err)
-					if err != nil {
-						log.Fatal(err)
-						return
-					}
-					continue
-				}
+	for reading := range readings {
+		totalReadings++
+		anomalyStatus := "OK"
 
-				if sensor.IsWarning() {
-					_, err = fmt.Fprintf(os.Stderr,
-						"WARNNING: %s temperature %.2f°C exceeds threshold 40°C\n",
-						reading.SensorID, reading.Temperature)
-					if err != nil {
-						log.Fatal(err)
-						return
-					}
-				}
-			}
-		case sig := <-sigChan: // Pokud do kanálu sigChan přišel signál (například Ctrl+C), který kanál zachycuje (zachycuje jen SIGINT a SIGTERM), tak se provede tento blok
-			_, err = fmt.Fprintf(os.Stderr, "\nReceived Signal: %v. Shutting down...\n", sig)
-			return // ukončí main, defer ticker.Stop() se zavolá
+		if reading.IsAnomaly {
+			anomalyCount++
+			anomalyStatus = "ANOMALY"
 		}
+
+		logger.Info("reading",
+			"sensor", reading.SensorID,
+			"temperature", fmt.Sprintf("%.2f°C", reading.Temperature),
+			"status", anomalyStatus,
+			"time", reading.Timestamp.Format("15:04:05"),
+		)
 	}
+
+	logger.Info("simulation complete",
+		"total_readings", totalReadings,
+		"anomalies", anomalyCount,
+		"anomaly_rate", fmt.Sprintf("%.1f%%", float64(anomalyCount)/float64(totalReadings)*100),
+	)
 }
+
+// $env:CGO_ENABLED = "1"
+// nutné pro go run -race ./...
+// + C kompilátor (pro windows např w64devkit)
