@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -10,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/BojkoJ/nano-sensor-simulator/simulator"
+	"github.com/BojkoJ/nano-sensor-simulator/cmd/simulator"
 )
 
 // ---------------------------------------------------------------------------
@@ -43,6 +45,13 @@ import (
 // │   └── sensor_test.go (unit testing)
 // └── go.mod
 // ---------------------------------------------------------------------------
+
+type Output struct {
+	Sensor      string `json:"sensor"`
+	Temperature string `json:"temperature"`
+	Status      string `json:"status"`
+	Time        string `json:"time"`
+}
 
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -80,6 +89,9 @@ func main() {
 
 	// WaitGroup pro čekání na dokončení goroutin
 	var wg sync.WaitGroup
+
+	// JSON Encoder pro výstup na stdout
+	encoder := json.NewEncoder(os.Stdout)
 
 	// Spuštění goroutin pro každý senzor
 	for _, cfg := range sensors {
@@ -123,6 +135,8 @@ func main() {
 		anomalyCount  int
 	)
 
+	var output Output
+
 	for reading := range readings {
 		totalReadings++
 		anomalyStatus := "OK"
@@ -132,12 +146,32 @@ func main() {
 			anomalyStatus = "ANOMALY"
 		}
 
-		logger.Info("reading",
-			"sensor", reading.SensorID,
-			"temperature", fmt.Sprintf("%.2f°C", reading.Temperature),
-			"status", anomalyStatus,
-			"time", reading.Timestamp.Format("15:04:05"),
-		)
+		// Chceme toto logovat ve formátu JSON:
+		// logger.Info("reading",
+		// 	"sensor", reading.SensorID,
+		//	"temperature", fmt.Sprintf("%.2f°C", reading.Temperature),
+		//	"status", anomalyStatus,
+		//	"time", reading.Timestamp.Format("15:04:05"),
+		// )
+
+		output = Output{
+			Sensor:      reading.SensorID,
+			Temperature: fmt.Sprintf("%.2f°C", reading.Temperature),
+			Status:      anomalyStatus,
+			Time:        reading.Timestamp.Format("15:04:05"),
+		}
+
+		// Zapíšeme JSON na stdout
+		// funkce Encode zapíše JSON reprezentaci objektu output do writeru (v našem případě os.Stdout)
+		// automaticky na stdout, protože json.NewEncoder(os.Stdout)
+		if err := encoder.Encode(output); err != nil {
+			_, err := fmt.Fprintf(os.Stderr, "ERROR: encode output: %v\n", err)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			continue
+		}
 	}
 
 	logger.Info("simulation complete",
@@ -145,6 +179,7 @@ func main() {
 		"anomalies", anomalyCount,
 		"anomaly_rate", fmt.Sprintf("%.1f%%", float64(anomalyCount)/float64(totalReadings)*100),
 	)
+
 }
 
 // $env:CGO_ENABLED = "1"

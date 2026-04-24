@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  simulator:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+    container_name: sts-simulator
+    environment:
+      LOG_FORMAT: json
+      LOG_LEVEL: debug
+    networks:
+      - sts-network
+    restart: unless-stopped
+
+networks:
+  sts-network:
+    driver: bridge

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/BojkoJ/nano-sensor-simulator/simulator"
+	"github.com/BojkoJ/nano-sensor-simulator/cmd/simulator"
 )
 
 // ---------------------------------------------------------------------------

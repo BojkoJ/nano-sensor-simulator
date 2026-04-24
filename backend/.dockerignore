@@ -1,0 +1,9 @@
+.git
+*.md
+bin/
+tmp/
+nats-test/
+Dockerfile*
+docker-compose*
+.dockerignore
+**/*_test.go
