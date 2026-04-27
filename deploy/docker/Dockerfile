@@ -18,9 +18,10 @@ WORKDIR /build
 COPY go.mod ./
 RUN go mod download
 
-# Teprve teď zkopírujeme zbytek zdrojového kódu.
-# Tato vrstva se invaliduje při každé změně kódu - ale závislosti jsou stále v cache.
-COPY .. .
+# Teprve ted zkopirujeme jen zdrojaky nutne pro sestaveni simulatoru.
+# Tato vrstva se invaliduje pri zmene kodu, ale vrstva s go mod cache zustava.
+COPY ["./cmd", "./cmd"]
+COPY ["./internal", "./internal"]
 
 # Kompilace binárky.
 # CGO_ENABLED=0    - zakáže CGO, výsledek je statická binárka bez závislosti na libc.
@@ -32,7 +33,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
     -trimpath \
     -o /build/simulator \
-    ./main.go
+    ./cmd/simulator
 
 # Stage 2: Runtime
 # Začínáme znovu od nuly s minimálním base image.
@@ -69,7 +70,7 @@ EXPOSE 8080
 # Pro FROM scratch bychom museli zkopírovat /etc/passwd a /etc/group z builder stage.
 USER nonroot:nonroot
 
-# language= Hlavní příkaz kontejneru.
+# Hlavni prikaz kontejneru.
 # Exec forma (JSON array) zajistí, že /simulator bude PID 1 a dostane SIGTERM správně.
 ENTRYPOINT ["/simulator"]
 

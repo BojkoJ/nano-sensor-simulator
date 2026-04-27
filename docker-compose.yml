@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   simulator:
     build:
@@ -7,6 +5,7 @@ services:
       dockerfile: deploy/docker/Dockerfile
     container_name: sts-simulator
     environment:
+      TZ: Europe/Prague
       LOG_FORMAT: json
       LOG_LEVEL: debug
     networks:
