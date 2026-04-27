@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="go test -cover ./simulator/... " type="GoTestRunConfiguration" factoryName="Go Test">
-    <module name="mini-project" />
+    <module name="nano-sensor-simulator" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-cover" />
     <kind value="DIRECTORY" />

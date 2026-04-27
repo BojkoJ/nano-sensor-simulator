@@ -27,7 +27,7 @@ import (
 // 5. Gracefully se ukončí při Ctrl+C (os.Signal)
 //
 // Struktura projektu:
-// go-learning-project-sensors/
+// nano-sensor-simulator/
 // ├── main.go    (vstupní bod, signal handling, ticker loop)
 // ├── sensor.go  (sensor logika, generování dat)
 // └── go.mod
@@ -38,7 +38,7 @@ import (
 // Program správně reaguje na Ctrl+C a obsahuje unit testy (sensor_test.go).
 //
 // Nová struktura projektu:
-// go-learning-project-sensors/
+// nano-sensor-simulator/
 // ├── main.go
 // ├── simulator/
 // │   ├── sensor.go
@@ -54,6 +54,7 @@ import (
 // Uklidit folder/file strukturu projektu.
 //
 // Nová struktura projektu:
+// nano-sensor-simulator/
 // ├── cmd/
 // │   └── simulator/
 // │       └──  main.go

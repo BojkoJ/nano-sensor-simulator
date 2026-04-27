@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="go run -race ./cmd/simulator" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="mini-project" />
+    <module name="nano-sensor-simulator" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-race" />
     <envs>
