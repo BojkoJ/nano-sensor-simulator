@@ -37,6 +37,30 @@ import (
 // │   └── sensor_test.go (unit testing)
 // └── go.mod
 // ---------------------------------------------------------------------------
+// Mini projekt. Část 2:
+// Vytvořit multi-stage Dockerfile pro simulátor z Lekce 1.
+// Výsledný image musí mít méně než 20MB.
+// Aplikace běží jako non-root user
+// Vytvořit docker-compose.yml, který spustí simulátor.
+// Ověřit, že docker logs zobrazuje JSON výstup ze senzorů
+// Uklidit folder/file strukturu projektu.
+//
+// Nová struktura projektu:
+// ├── cmd/
+// │   └── simulator/
+// │       └──  main.go
+// ├── internal
+// │   └── simulator
+// │       ├── sensor.go
+// │       └── sensor_test.go (unit testing)
+// ├── deploy/
+// │   └── docker/
+// │       ├── .dockerignore
+// │       └── Dockerfile
+// ├── docker-compose.yml
+// ├── .gitignore
+// └── go.mod
+// ---------------------------------------------------------------------------
 
 func TestGenerateTemperature_WithinBounds(t *testing.T) {
 	tests := []struct {
