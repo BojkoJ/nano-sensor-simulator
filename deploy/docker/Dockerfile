@@ -2,7 +2,7 @@
 # Používáme oficální Go image s Alpine jako base pro build stage.
 # Verze Go musí přesně odpovídat verzi v go.mod.
 # "AS builder" pojmenuje stage pro pozdějí COPY --from=builder
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 # Nainstalujeme ca-certificates pro HTTPS volání a git pro go get
 # Děláme to v jednom RUN příkazu = jedna vrstva. Čistíme cache hned po instalaci.
@@ -20,7 +20,7 @@ RUN go mod download
 
 # Teprve teď zkopírujeme zbytek zdrojového kódu.
 # Tato vrstva se invaliduje při každé změně kódu - ale závislosti jsou stále v cache.
-COPY . .
+COPY .. .
 
 # Kompilace binárky.
 # CGO_ENABLED=0    - zakáže CGO, výsledek je statická binárka bez závislosti na libc.
@@ -122,5 +122,5 @@ ENTRYPOINT ["/simulator"]
 # simulator:1.0.0
 
 
-# Tento spouštět: docker build -f backend/Dockerfile -t sts-simulator:dev .
+# Tento spouštět: docker build -f deploy/Dockerfile -t sts-simulator:dev .
 # pak: docker images sts-simulator:dev

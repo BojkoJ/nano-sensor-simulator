@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/BojkoJ/nano-sensor-simulator/cmd/simulator"
+	"github.com/BojkoJ/nano-sensor-simulator/internal/simulator"
 )
 
 // ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ func TestGenerateTemperature_WithinBounds(t *testing.T) {
 			rng := rand.New(rand.NewSource(42)) // Deterministický seed pro reprodukovatelnost
 
 			for i := 0; i < testCase.samples; i++ {
-				temperature := simulator.GenerateTemperature(testCase.minTemperature, testCase.maxTemperature, rng)
+				temperature := simulator.simulator.GenerateTemperature(testCase.minTemperature, testCase.maxTemperature, rng)
 
 				if temperature < testCase.minTemperature || temperature > testCase.maxTemperature {
 					t.Errorf("sample %d: temperature %.4f out of range [%.1f, %.1f]",

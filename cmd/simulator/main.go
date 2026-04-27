@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/BojkoJ/nano-sensor-simulator/cmd/simulator"
+	"github.com/BojkoJ/nano-sensor-simulator/internal/simulator"
 )
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ func main() {
 	}))
 
 	// Definice senzorů
-	sensors := []simulator.Config{
+	sensors := []simulator.simulator{
 		{
 			ID:       "TEMP-001",
 			MinTemp:  -10.0,
@@ -147,6 +147,8 @@ func main() {
 		}
 
 		// Chceme toto logovat ve formátu JSON:
+
+		// Takto by to bylo skrze slog logger na stdout
 		// logger.Info("reading",
 		// 	"sensor", reading.SensorID,
 		//	"temperature", fmt.Sprintf("%.2f°C", reading.Temperature),

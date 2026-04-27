@@ -1,3 +1,3 @@
 module github.com/BojkoJ/nano-sensor-simulator
 
-go 1.25.4
+go 1.26.2

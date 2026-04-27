@@ -4,7 +4,7 @@ services:
   simulator:
     build:
       context: ./
-      dockerfile: backend/Dockerfile
+      dockerfile: deploy/docker/Dockerfile
     container_name: sts-simulator
     environment:
       LOG_FORMAT: json
