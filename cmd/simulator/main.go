@@ -59,7 +59,7 @@ func main() {
 	}))
 
 	// Definice senzorů
-	sensors := []simulator.simulator{
+	sensors := []simulator.Config{
 		{
 			ID:       "TEMP-001",
 			MinTemp:  -10.0,
